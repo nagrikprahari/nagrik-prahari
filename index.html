@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="नागरिक प्रहरी — नागरिकों की आवाज़, अधिकारों का प्रहरी। स्वतंत्र समाचार एवं कानूनी शोध मंच।">
+  <title>नागरिक प्रहरी | NAGRIK PRAHARI</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="#home">
+      <span class="brand-mark">न</span>
+      <span><strong>नागरिक प्रहरी</strong><small>NAGRIK PRAHARI</small></span>
+    </a>
+    <button class="menu-toggle" id="menuToggle" aria-label="मेन्यू खोलें">☰</button>
+    <nav id="mainNav">
+      <a href="#home">होम</a><a href="#news">समाचार</a><a href="#law">कानून</a>
+      <a href="#judgments">निर्णय</a><a href="#videos">वीडियो</a><a href="#about">हमारे बारे में</a><a href="#contact">संपर्क</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero" id="home">
+      <div class="hero-content">
+        <p class="eyebrow">स्वतंत्र समाचार एवं कानूनी शोध मंच</p>
+        <h1>नागरिकों की आवाज़,<br><span>अधिकारों का प्रहरी।</span></h1>
+        <p>समाचार, कानून और न्यायिक फैसलों की विश्वसनीय जानकारी — सरल हिंदी में।</p>
+        <div class="hero-actions"><a class="btn primary" href="#news">ताज़ा समाचार</a><a class="btn secondary" href="#law">कानूनी संसाधन</a></div>
+      </div>
+      <div class="hero-note"><span>जनहित</span><span>तथ्य</span><span>जवाबदेही</span></div>
+    </section>
+
+    <section class="section" id="news">
+      <div class="section-heading"><div><p class="eyebrow">अपडेट</p><h2>प्रमुख समाचार</h2></div><span class="section-tag">डेमो सामग्री</span></div>
+      <div class="filters">
+        <input id="searchInput" type="search" placeholder="समाचार खोजें..." aria-label="समाचार खोजें">
+        <select id="categoryFilter" aria-label="श्रेणी चुनें"><option value="all">सभी श्रेणियाँ</option><option value="देश">देश</option><option value="शिक्षा">शिक्षा</option><option value="कानून">कानून</option></select>
+      </div>
+      <div class="news-grid" id="newsGrid">
+        <article class="news-card" data-category="देश"><span class="category">देश</span><h3>जनहित से जुड़े मुद्दों पर तथ्य आधारित रिपोर्टिंग</h3><p>यह एक नमूना कार्ड है। वास्तविक समाचार प्रकाशित करने से पहले स्रोत और तारीख की पुष्टि करें।</p><small>नमूना सामग्री · सत्यापन आवश्यक</small></article>
+        <article class="news-card" data-category="शिक्षा"><span class="category">शिक्षा</span><h3>शिक्षा और रोजगार से जुड़ी सूचनाएँ</h3><p>भर्ती, परीक्षा और सरकारी सूचनाओं के लिए मूल अधिसूचना अवश्य देखें।</p><small>नमूना सामग्री · सत्यापन आवश्यक</small></article>
+        <article class="news-card" data-category="कानून"><span class="category">कानून</span><h3>कानूनी अधिकारों को सरल भाषा में समझें</h3><p>कानूनी जानकारी सामान्य जागरूकता के लिए है, व्यक्तिगत कानूनी सलाह नहीं।</p><small>नमूना सामग्री · सत्यापन आवश्यक</small></article>
+      </div>
+      <p class="empty-state" id="emptyState" hidden>कोई परिणाम नहीं मिला।</p>
+    </section>
+
+    <section class="section muted" id="law">
+      <div class="section-heading"><div><p class="eyebrow">कानूनी संसाधन</p><h2>कानून और अधिनियम</h2></div></div>
+      <div class="resource-grid">
+        <a class="resource-card" href="https://www.indiacode.nic.in/" target="_blank" rel="noopener"><strong>India Code</strong><span>केंद्रीय अधिनियमों का आधिकारिक स्रोत ↗</span></a>
+        <a class="resource-card" href="https://www.sci.gov.in/" target="_blank" rel="noopener"><strong>Supreme Court of India</strong><span>सर्वोच्च न्यायालय की आधिकारिक वेबसाइट ↗</span></a>
+        <a class="resource-card" href="https://ecommitteesci.gov.in/" target="_blank" rel="noopener"><strong>ई-कोर्ट्स</strong><span>न्यायालय संबंधी डिजिटल सेवाएँ ↗</span></a>
+      </div>
+    </section>
+
+    <section class="section" id="judgments">
+      <p class="eyebrow">न्यायिक फैसले</p><h2>निर्णय एवं केस लॉ</h2>
+      <p class="section-intro">यहाँ आगे चलकर सर्वोच्च न्यायालय, उच्च न्यायालयों और अन्य उपलब्ध न्यायिक स्रोतों के फैसलों के लिंक, सारांश और खोज सुविधा जोड़ी जाएगी।</p>
+    </section>
+
+    <section class="section muted" id="videos">
+      <p class="eyebrow">वीडियो</p><h2>समाचार और कानूनी जानकारी</h2>
+      <p class="section-intro">वीडियो सेक्शन तैयार किया गया है। शुरुआत में अपने अधिकृत YouTube वीडियो एम्बेड किए जा सकते हैं।</p>
+    </section>
+
+    <section class="section" id="about">
+      <p class="eyebrow">हमारे बारे में</p><h2>नागरिक प्रहरी क्या है?</h2>
+      <p class="section-intro">नागरिक प्रहरी एक स्वतंत्र निजी डिजिटल मंच की परिकल्पना है, जिसका उद्देश्य समाचार, नागरिक अधिकारों और कानूनी जानकारी को सुलभ बनाना है। यह किसी सरकारी विभाग, पुलिस इकाई या न्यायालय की आधिकारिक वेबसाइट नहीं है।</p>
+    </section>
+
+    <section class="section contact-section" id="contact">
+      <p class="eyebrow">संपर्क</p><h2>हमसे संपर्क करें</h2>
+      <p>सुझाव, सुधार या सामान्य संपर्क के लिए ईमेल करें:</p>
+      <a class="email-link" href="mailto:antiwari000@gmail.com">antiwari000@gmail.com</a>
+    </section>
+  </main>
+
+  <footer>
+    <div><strong>नागरिक प्रहरी</strong><p>नागरिकों की आवाज़, अधिकारों का प्रहरी।</p><small>यह एक स्वतंत्र निजी मंच है, सरकारी वेबसाइट नहीं।</small></div>
+    <div class="footer-credit">Designed &amp; Developed by Ashish Nath Tiwari</div>
+    <small class="copyright">© <span id="year"></span> NAGRIK PRAHARI. सर्वाधिकार सुरक्षित।</small>
+  </footer>
+  <script src="script.js"></script>
+</body>
+</html>
