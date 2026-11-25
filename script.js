@@ -1,4 +1,4 @@
-
+﻿
 const menuToggle = document.getElementById('menuToggle');
 const mainNav = document.getElementById('mainNav');
 
@@ -45,27 +45,29 @@ function renderNews(items) {
   freshNews.forEach(item => {
     const card = document.createElement('article');
     card.className = 'news-card';
-    card.dataset.category = item.category || 'देश';
+    card.dataset.category = item.category || 'à¤¦à¥‡à¤¶';
 
     const title = document.createElement('h3');
     title.textContent = item.title;
 
-    const description = document.createElement('p');
-    description.textContent = item.description || '';
+    const description = item.description ? document.createElement('p') : null;
+    if (description) description.textContent = item.description;
 
     const meta = document.createElement('p');
     meta.className = 'meta';
     meta.textContent =
-      'स्रोत: ' + (item.source || 'समाचार स्रोत') +
-      ' | तारीख: ' + new Date(item.publishedAt).toLocaleString('hi-IN');
+      'à¤¸à¥à¤°à¥‹à¤¤: ' + (item.source || 'à¤¸à¤®à¤¾à¤šà¤¾à¤° à¤¸à¥à¤°à¥‹à¤¤') +
+      ' | à¤¤à¤¾à¤°à¥€à¤–: ' + new Date(item.publishedAt).toLocaleString('hi-IN');
 
     const link = document.createElement('a');
     link.href = item.link;
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
-    link.textContent = 'पूरी खबर पढ़ें';
+    link.textContent = 'à¤ªà¥‚à¤°à¥€ à¤–à¤¬à¤° à¤ªà¤¢à¤¼à¥‡à¤‚';
 
-    card.append(title, description, meta, link);
+    card.append(title);
+    if (description) card.append(description);
+    card.append(meta, link);
     newsGrid.appendChild(card);
     newsCards.push(card);
   });
@@ -100,7 +102,7 @@ async function loadPublishedNews() {
     const response = await fetch('./news-data/published-news.json');
 
     if (!response.ok) {
-      throw new Error('समाचार फाइल उपलब्ध नहीं है');
+      throw new Error('à¤¸à¤®à¤¾à¤šà¤¾à¤° à¤«à¤¾à¤‡à¤² à¤‰à¤ªà¤²à¤¬à¥à¤§ à¤¨à¤¹à¥€à¤‚ à¤¹à¥ˆ');
     }
 
     const items = await response.json();
@@ -109,7 +111,7 @@ async function loadPublishedNews() {
     newsGrid.innerHTML = '';
     if (emptyState) {
       emptyState.hidden = false;
-      emptyState.textContent = 'अभी कोई ताजा मंजूर खबर उपलब्ध नहीं है।';
+      emptyState.textContent = 'à¤…à¤­à¥€ à¤•à¥‹à¤ˆ à¤¤à¤¾à¤œà¤¾ à¤®à¤‚à¤œà¥‚à¤° à¤–à¤¬à¤° à¤‰à¤ªà¤²à¤¬à¥à¤§ à¤¨à¤¹à¥€à¤‚ à¤¹à¥ˆà¥¤';
     }
   }
 }
