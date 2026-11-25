@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>नागरिक प्रहरी | Admin Portal</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f2f4f8;font-family:Arial,sans-serif;color:#182230}
+header{background:#142b4a;color:white;padding:18px 5%;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+main{max-width:1100px;margin:25px auto;padding:0 15px}.panel{background:white;padding:22px;border-radius:12px;margin-bottom:18px;box-shadow:0 2px 12px #0000000b}
+input{display:block;width:100%;padding:12px;margin:10px 0;border:1px solid #ccd3dd;border-radius:7px}
+button{border:0;border-radius:7px;padding:10px 15px;margin:4px;cursor:pointer;background:#174c83;color:white}
+button:disabled{opacity:.5;cursor:not-allowed}.green{background:#16834a}.red{background:#b52b35}.grey{background:#596579}
+small,.muted{color:#64748b}.article{border:1px solid #e1e6ed;border-radius:9px;padding:15px;margin:12px 0}
+.article h3{margin:4px 0 10px}.meta{font-size:13px;color:#64748b;margin:7px 0}
+#app{display:none}#message{white-space:pre-wrap;margin:10px 0;color:#a12b2b}
+</style>
+</head>
+<body>
+<header>
+  <div><strong>नागरिक प्रहरी</strong><br><small style="color:#d5e4f5">सुरक्षित Admin Portal</small></div>
+  <button id="logout" class="grey" style="display:none">Logout</button>
+</header>
+<main>
+  <section id="login" class="panel">
+    <h2>Admin Login</h2>
+    <p class="muted">अपने अधिकृत ईमेल और पासवर्ड से लॉगिन करें।</p>
+    <input id="email" type="email" placeholder="ईमेल" autocomplete="username">
+    <input id="password" type="password" placeholder="पासवर्ड" autocomplete="current-password">
+    <button id="loginBtn">Login करें</button>
+    <button id="forgotBtn" class="grey" type="button">पासवर्ड भूल गए?</button>
+    <div id="resetPanel" style="display:none">
+      <h3>नया पासवर्ड सेट करें</h3>
+      <input id="newPassword" type="password" placeholder="नया पासवर्ड (कम से कम 8 अक्षर)" autocomplete="new-password">
+      <button id="savePasswordBtn" type="button">नया पासवर्ड सुरक्षित करें</button>
+      <button id="cancelResetBtn" class="grey" type="button">वापस Login पर जाएँ</button>
+    </div>
+    <div id="message"></div>
+  </section>
+
+  <section id="app">
+    <div class="panel">
+      <h2 id="welcome">Admin Dashboard</h2>
+      <p id="role"></p>
+      <button id="importBtn">Pending JSON से खबरें Import करें</button>
+      <button id="refreshBtn" class="grey">Refresh</button>
+      <p id="notice" class="muted"></p>
+    </div>
+    <div class="panel">
+      <h2>खबरों की समीक्षा</h2>
+      <div id="articles">खबरें लोड हो रही हैं...</div>
+    </div>
+  </section>
+</main>
+
+<script>
+(() => {
+const SUPABASE_URL = "https://sffmbrjuokglvpjcnfbo.supabase.co";
+const SUPABASE_KEY = "sb_publishable_aDGRC0AmlV5GEFF-b4wEcA_YNUbU9mA";
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let currentUser = null;
+let currentRole = null;
+let recoveryMode =
+  new URLSearchParams(window.location.search).get("flow") === "recovery" ||
+  window.location.hash.includes("type=recovery");
+if (recoveryMode) {
+  $("login").style.display = "block";
+  $("app").style.display = "none";
+  $("resetPanel").style.display = "block";
+  $("loginBtn").style.display = "none";
+  $("forgotBtn").style.display = "none";
+}
+if (recoveryMode) {
+  $("login").style.display = "block";
+  $("app").style.display = "none";
+  $("resetPanel").style.display = "block";
+  $("loginBtn").style.display = "none";
+  $("forgotBtn").style.display = "none";
+}
+
+const $ = id => document.getElementById(id);
+const msg = (text, error=false) => {
+  $("message").textContent = text;
+  $("message").style.color = error ? "#b52b35" : "#16834a";
+};
+const note = text => $("notice").textContent = text;
+const esc = value => String(value ?? "").replace(/[&<>"']/g, c => ({
+  "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+}[c]));
+const recent = date => {
+  if (!date) return false;
+  const t = new Date(date).getTime();
+  return Number.isFinite(t) && t >= Date.now()-24*60*60*1000 && t <= Date.now()+5*60*1000;
+};
+
+async function openDashboard(user) {
+  if (recoveryMode || window.location.hash.includes("type=recovery")) return;
+  currentUser = user;
+  const {data:profile,error} = await db.from("profiles")
+    .select("email,full_name,role").eq("id",user.id).single();
+  if (recoveryMode) return;
+  if (error || !profile) {
+    msg("Profile नहीं मिला: " + (error?.message || "अनधिकृत अकाउंट"), true);
+    await db.auth.signOut();
+    return;
+  }
+  currentRole = profile.role;
+  if (!["super_admin","news_admin"].includes(currentRole)) {
+    msg("इस अकाउंट को Admin Portal की अनुमति नहीं है।",true);
+    await db.auth.signOut();
+    return;
+  }
+  $("login").style.display = "none";
+  $("app").style.display = "block";
+  $("logout").style.display = "inline-block";
+  $("welcome").textContent = "स्वागत है, " + (profile.full_name || profile.email);
+  $("role").textContent = currentRole === "super_admin"
+    ? "भूमिका: Super Admin — पूर्ण नियंत्रण"
+    : "भूमिका: News Admin — खबरों की समीक्षा";
+  $("importBtn").style.display = currentRole === "super_admin" ? "inline-block" : "none";
+  await loadArticles();
+}
+
+async function loadArticles() {
+  $("articles").textContent = "खबरें लोड हो रही हैं...";
+  const {data,error} = await db.from("articles")
+    .select("id,title,description,source,source_url,category,status,published_at,created_at")
+    .order("created_at",{ascending:false}).limit(500);
+  if (error) {
+    $("articles").textContent = "खबरें लोड नहीं हुईं: " + error.message;
+    return;
+  }
+  const list = (data || []).filter(a =>
+    ["pending","approved","rejected","draft"].includes(a.status)
+  );
+  if (!list.length) {
+    $("articles").textContent = "अभी Database में कोई समीक्षा योग्य खबर नहीं है। JSON Import करें।";
+    return;
+  }
+  $("articles").innerHTML = list.map(a => `
+    <div class="article">
+      <h3>${esc(a.title)}</h3>
+      <div class="meta">${esc(a.category || "सामान्य")} · ${esc(a.source || "अज्ञात स्रोत")} · स्थिति: <b>${esc(a.status)}</b></div>
+      <p>${esc(a.description || "")}</p>
+      ${a.source_url ? `<a href="${esc(a.source_url)}" target="_blank" rel="noopener">मूल खबर पढ़ें</a>` : ""}
+      <div>
+        ${currentRole === "news_admin" && a.status !== "published" ? `
+          <button class="green" data-action="approve" data-id="${esc(a.id)}">Approve</button>
+          <button class="red" data-action="reject" data-id="${esc(a.id)}">Reject</button>` : ""}
+        ${currentRole === "super_admin" && a.status !== "published" ? `
+          <button class="green" data-action="publish" data-id="${esc(a.id)}">Publish</button>
+          <button class="red" data-action="reject" data-id="${esc(a.id)}">Reject</button>` : ""}
+      </div>
+    </div>`).join("");
+}
+
+async function changeStatus(id,status) {
+  if (status === "published" && currentRole !== "super_admin") {
+    alert("Publish अधिकार केवल Super Admin के पास है।"); return;
+  }
+  if (!confirm("क्या आप इस खबर की स्थिति बदलना चाहते हैं?")) return;
+  const values = {status,updated_at:new Date().toISOString()};
+  if (status === "published") values.published_at = new Date().toISOString();
+  const {error} = await db.from("articles").update(values).eq("id",id);
+  if (error) {
+    alert("अपडेट नहीं हुआ: " + error.message);
+    return;
+  }
+  note("खबर की स्थिति अपडेट हो गई।");
+  await loadArticles();
+}
+
+$("articles").addEventListener("click", async e => {
+  const b = e.target.closest("button[data-action]");
+  if (!b) return;
+  const status = b.dataset.action === "approve" ? "approved" :
+                 b.dataset.action === "reject" ? "rejected" : "published";
+  await changeStatus(b.dataset.id,status);
+});
+
+async function importPending() {
+  note("Pending खबरें जाँची जा रही हैं...");
+  try {
+    const response = await fetch("./news-data/pending-news.json",{cache:"no-store"});
+    if (!response.ok) throw new Error("pending-news.json नहीं खुली: HTTP " + response.status);
+    const items = await response.json();
+    const {data:existing,error} = await db.from("articles").select("source_url");
+    if (error) throw error;
+    const known = new Set((existing || []).map(x=>x.source_url).filter(Boolean));
+    const batch = [];
+    const seen = new Set();
+    for (const n of items) {
+      if (!n.title || !n.link || !recent(n.publishedAt)) continue;
+      if (known.has(n.link) || seen.has(n.link)) continue;
+      seen.add(n.link);
+      batch.push({
+        title:n.title,
+        description:n.description || null,
+        content:null,
+        source:n.source || null,
+        source_url:n.link,
+        category:n.category || "सामान्य",
+        status:"pending",
+        published_at:n.publishedAt || null,
+        created_by:currentUser.id
+      });
+    }
+    if (!batch.length) {
+      note("कोई नई ताज़ा खबर Import के लिए नहीं मिली।");
+      return;
+    }
+    let count = 0;
+    for (let i=0;i<batch.length;i+=50) {
+      const {error:insertError} = await db.from("articles").insert(batch.slice(i,i+50));
+      if (insertError) throw insertError;
+      count += batch.slice(i,i+50).length;
+    }
+    note(count + " नई खबरें सुरक्षित रूप से Import हुईं।");
+    await loadArticles();
+  } catch (e) {
+    note("Import में समस्या: " + (e.message || e));
+  }
+}
+
+$("forgotBtn").addEventListener("click", async () => {
+  const email = $("email").value.trim();
+  if (!email) return msg("पहले अपना ईमेल भरें।",true);
+  msg("Password Reset ईमेल भेजा जा रहा है...");
+  const redirectTo = window.location.origin + window.location.pathname + "?flow=recovery";
+  const {error} = await db.auth.resetPasswordForEmail(email,{redirectTo});
+  if (error) return msg("Reset ईमेल नहीं भेजा गया: " + error.message,true);
+  msg("Reset लिंक भेज दिया गया है। Gmail खोलकर नया लिंक इस्तेमाल करें।");
+});
+
+$("savePasswordBtn").addEventListener("click", async () => {
+  const password = $("newPassword").value;
+  if (password.length < 8) return msg("पासवर्ड कम से कम 8 अक्षर का रखें।",true);
+  const {error} = await db.auth.updateUser({password});
+  if (error) return msg("पासवर्ड बदलने में समस्या: " + error.message,true);
+  msg("पासवर्ड सफलतापूर्वक बदल गया। अब नए पासवर्ड से Login करें।");
+  $("resetPanel").style.display = "none";
+  $("newPassword").value = "";
+  await db.auth.signOut();
+});
+
+$("cancelResetBtn").addEventListener("click", async () => {
+  await db.auth.signOut();
+  $("resetPanel").style.display = "none";
+  $("loginBtn").style.display = "inline-block";
+  $("forgotBtn").style.display = "inline-block";
+  msg("अब आप Login कर सकते हैं।");
+});
+
+$("loginBtn").addEventListener("click", async () => {
+  msg("लॉगिन हो रहा है...");
+  const email = $("email").value.trim();
+  const password = $("password").value;
+  if (!email || !password) return msg("ईमेल और पासवर्ड भरें।",true);
+  const {data,error} = await db.auth.signInWithPassword({email,password});
+  if (error) return msg("Login असफल: " + error.message,true);
+  await openDashboard(data.user);
+});
+$("logout").addEventListener("click", async () => {
+  await db.auth.signOut();
+  location.reload();
+});
+$("refreshBtn").addEventListener("click",loadArticles);
+$("importBtn").addEventListener("click",importPending);
+
+db.auth.onAuthStateChange((event, session) => {
+  if (event === "PASSWORD_RECOVERY" || new URLSearchParams(window.location.search).get("flow") === "recovery" || window.location.hash.includes("type=recovery")) {
+    recoveryMode = true;
+    $("login").style.display = "block";
+    $("app").style.display = "none";
+    $("resetPanel").style.display = "block";
+    $("loginBtn").style.display = "none";
+    $("forgotBtn").style.display = "none";
+    msg("अब अपना नया पासवर्ड सेट करें।");
+    return;
+  }
+  if (event === "SIGNED_OUT") {
+    recoveryMode = false;
+    $("app").style.display = "none";
+    $("login").style.display = "block";
+    $("resetPanel").style.display = "none";
+    $("loginBtn").style.display = "inline-block";
+    $("forgotBtn").style.display = "inline-block";
+    return;
+  }
+  if (recoveryMode) return;
+  if (session && ["INITIAL_SESSION","SIGNED_IN","TOKEN_REFRESHED"].includes(event)) {
+    openDashboard(session.user);
+  }
+});
+})();
+</script>
+</body>
+</html>
