@@ -1,0 +1,224 @@
+
+{
+  "project": "Nagrik Prahari Legal Library",
+  "version": "1.0.0",
+  "language": ["hi", "en"],
+  "categories": [
+    {
+      "id": "constitution",
+      "name_hi": "भारतीय संविधान",
+      "name_en": "Constitution of India"
+    },
+    {
+      "id": "central-acts",
+      "name_hi": "केंद्रीय अधिनियम",
+      "name_en": "Central Acts"
+    },
+    {
+      "id": "state-acts",
+      "name_hi": "राज्य अधिनियम",
+      "name_en": "State Acts"
+    },
+    {
+      "id": "criminal-laws",
+      "name_hi": "आपराधिक कानून",
+      "name_en": "Criminal Laws"
+    },
+    {
+      "id": "rules",
+      "name_hi": "नियम एवं विनियम",
+      "name_en": "Rules and Regulations"
+    },
+    {
+      "id": "judgments",
+      "name_hi": "न्यायिक निर्णय",
+      "name_en": "Judgments"
+    },
+    {
+      "id": "international-laws",
+      "name_hi": "अंतरराष्ट्रीय कानून",
+      "name_en": "International Laws"
+    }
+  ],
+  "laws": [
+    {
+      "id": "constitution-of-india",
+      "category": "constitution",
+      "name_hi": "भारत का संविधान",
+      "name_en": "Constitution of India",
+      "year": 1950,
+      "status": "in-force",
+      "official_url": "https://www.indiacode.nic.in/"
+    },
+    {
+      "id": "bns-2023",
+      "category": "criminal-laws",
+      "name_hi": "भारतीय न्याय संहिता, 2023",
+      "name_en": "Bharatiya Nyaya Sanhita, 2023",
+      "short_name": "BNS",
+      "year": 2023,
+      "status": "in-force",
+      "official_url": "https://www.indiacode.nic.in/"
+    },
+    {
+      "id": "bnss-2023",
+      "category": "criminal-laws",
+      "name_hi": "भारतीय नागरिक सुरक्षा संहिता, 2023",
+      "name_en": "Bharatiya Nagarik Suraksha Sanhita, 2023",
+      "short_name": "BNSS",
+      "year": 2023,
+      "status": "in-force",
+      "official_url": "https://www.indiacode.nic.in/"
+    },
+    {
+      "id": "bsa-2023",
+      "category": "criminal-laws",
+      "name_hi": "भारतीय साक्ष्य अधिनियम, 2023",
+      "name_en": "Bharatiya Sakshya Adhiniyam, 2023",
+      "short_name": "BSA",
+      "year": 2023,
+      "status": "in-force",
+      "official_url": "https://www.indiacode.nic.in/"
+    },
+    {
+      "id": "rti-act-2005",
+      "category": "central-acts",
+      "name_hi": "सूचना का अधिकार अधिनियम, 2005",
+      "name_en": "Right to Information Act, 2005",
+      "short_name": "RTI Act",
+      "year": 2005,
+      "status": "in-force",
+      "official_url": "https://www.indiacode.nic.in/"
+    },
+    {
+      "id": "consumer-protection-act-2019",
+      "category": "central-acts",
+      "name_hi": "उपभोक्ता संरक्षण अधिनियम, 2019",
+      "name_en": "Consumer Protection Act, 2019",
+      "year": 2019,
+      "status": "in-force",
+      "official_url": "https://www.indiacode.nic.in/"
+    },
+    {
+      "id": "it-act-2000",
+      "category": "central-acts",
+      "name_hi": "सूचना प्रौद्योगिकी अधिनियम, 2000",
+      "name_en": "Information Technology Act, 2000",
+      "year": 2000,
+      "status": "in-force",
+      "official_url": "https://www.indiacode.nic.in/"
+    },      
+    {
+      "id": "dowry-prohibition-act-1961",
+      "category": "central-acts",
+      "name_hi": "दहेज प्रतिषेध अधिनियम, 1961",
+      "name_en": "Dowry Prohibition Act, 1961",
+      "year": 1961,
+      "status": "in-force",
+      "official_url": "https://www.indiacode.nic.in/"
+    },
+    {
+      "id": "domestic-violence-act-2005",
+      "category": "central-acts",
+      "name_hi": "घरेलू हिंसा से महिलाओं का संरक्षण अधिनियम, 2005",
+      "name_en": "Protection of Women from Domestic Violence Act, 2005",
+      "year": 2005,
+      "status": "in-force",
+      "official_url": "https://www.indiacode.nic.in/"
+    },
+    {
+      "id": "hindu-marriage-act-1955",
+      "category": "central-acts",
+      "name_hi": "हिंदू विवाह अधिनियम, 1955",
+      "name_en": "Hindu Marriage Act, 1955",
+      "year": 1955,
+      "status": "in-force",
+      "official_url": "https://www.indiacode.nic.in/bitstream/123456789/1560/1/A1955-25Eng.pdf"
+    },
+    {
+      "id": "special-marriage-act-1954",
+      "category": "central-acts",
+      "name_hi": "विशेष विवाह अधिनियम, 1954",
+      "name_en": "Special Marriage Act, 1954",
+      "year": 1954,
+      "status": "in-force",
+      "official_url": "https://www.indiacode.nic.in/indiacode/handle/123456789/1387?view_type=search"
+    },
+    {
+      "id": "sc-st-prevention-atrocities-act-1989",
+      "category": "central-acts",
+      "name_hi": "अनुसूचित जाति और अनुसूचित जनजाति (अत्याचार निवारण) अधिनियम, 1989",
+      "name_en": "SC and ST (Prevention of Atrocities) Act, 1989",
+      "year": 1989,
+      "status": "in-force",
+      "official_url": "https://www.indiacode.nic.in/indiacode/handle/123456789/1920?view_type=search"
+    },
+    {
+      "id": "pocso-act-2012",
+      "category": "central-acts",
+      "name_hi": "लैंगिक अपराधों से बालकों का संरक्षण अधिनियम, 2012",
+      "name_en": "Protection of Children from Sexual Offences Act, 2012",
+      "short_name": "POCSO",
+      "year": 2012,
+      "status": "in-force",
+      "official_url": "https://www.indiacode.nic.in/indiacode/handle/123456789/2079?view_type=browse"
+    },
+    {
+      "id": "prohibition-child-marriage-act-2006",
+      "category": "central-acts",
+      "name_hi": "बाल विवाह प्रतिषेध अधिनियम, 2006",
+      "name_en": "Prohibition of Child Marriage Act, 2006",
+      "year": 2006,
+      "status": "in-force",
+      "official_url": "https://upload.indiacode.nic.in/showfile?actid=AC_CEN_13_14_00001_200706_1517807317592&filename=a2007-06.pdf&type=actfile"
+    },
+    {
+      "id": "motor-vehicles-act-1988",
+      "category": "central-acts",
+      "name_hi": "मोटर यान अधिनियम, 1988",
+      "name_en": "Motor Vehicles Act, 1988",
+      "year": 1988,
+      "status": "in-force",
+      "official_url": "https://www.indiacode.nic.in/indiacode/handle/123456789/1798?view_type=search"
+    },
+    {
+      "id": "environment-protection-act-1986",
+      "category": "central-acts",
+      "name_hi": "पर्यावरण (संरक्षण) अधिनियम, 1986",
+      "name_en": "Environment (Protection) Act, 1986",
+      "year": 1986,
+      "status": "in-force",
+      "official_url": "https://www.indiacode.nic.in/indiacode/handle/123456789/1876?view_type=browse"
+    },
+    {
+      "id": "code-on-wages-2019",
+      "category": "central-acts",
+      "name_hi": "मजदूरी संहिता, 2019",
+      "name_en": "Code on Wages, 2019",
+      "year": 2019,
+      "status": "in-force",
+      "official_url": "https://www.indiacode.nic.in/indiacode/handle/123456789/15793?view_type=browse"
+    },
+    {
+      "id": "protection-civil-rights-act-1955",
+      "category": "central-acts",
+      "name_hi": "सिविल अधिकार संरक्षण अधिनियम, 1955",
+      "name_en": "Protection of Civil Rights Act, 1955",
+      "year": 1955,
+      "status": "in-force",
+      "official_url": "https://www.indiacode.nic.in/indiacode/handle/123456789/1544?view_type=browse"
+    },
+    {
+      "id": "hindu-succession-act-1956",
+      "category": "central-acts",
+      "name_hi": "हिंदू उत्तराधिकार अधिनियम, 1956",
+      "name_en": "Hindu Succession Act, 1956",
+      "year": 1956,
+      "status": "in-force",
+      "official_url": "https://www.indiacode.nic.in/indiacode/handle/123456789/1713?view_type=browse"
+    }
+
+  ],
+  "states": [],
+  "union_territories": []
+}

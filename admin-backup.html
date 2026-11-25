@@ -1,0 +1,137 @@
+
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>नागरिक प्रहरी - समाचार समीक्षा</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f3f4f6;
+      color: #222;
+    }
+    header {
+      background: #172554;
+      color: white;
+      padding: 20px;
+      border-radius: 10px;
+    }
+    .news-card {
+      background: white;
+      padding: 18px;
+      margin: 15px 0;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px #0001;
+    }
+    .news-card h3 { margin-top: 0; }
+    .meta { color: #666; font-size: 13px; }
+    button {
+      padding: 9px 14px;
+      border: 0;
+      border-radius: 6px;
+      cursor: pointer;
+      margin: 5px 5px 5px 0;
+    }
+    .approve { background: #15803d; color: white; }
+    .reject { background: #b91c1c; color: white; }
+    .open { background: #1d4ed8; color: white; }
+    #message { font-weight: bold; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>नागरिक प्रहरी</h1>
+    <h2>समाचार समीक्षा पैनल</h2>
+    <p>खबर पढ़ें और फिर मंजूर या अस्वीकार करें।</p>
+  </header>
+
+  <h2>लंबित समाचार: <span id="count">0</span></h2>
+  <p id="message"></p>
+  <div id="newsList">समाचार लोड हो रहे हैं...</div>
+
+  <script>
+    let news = [];
+
+    async function loadNews() {
+      try {
+        const response = await fetch("./news-data/pending-news.json");
+        if (!response.ok) throw new Error("समाचार फाइल नहीं मिली");
+
+        news = await response.json();
+        showNews();
+      } catch (error) {
+        document.getElementById("newsList").textContent =
+          "समाचार लोड नहीं हुए। वेबसाइट को लोकल सर्वर से खोलें।";
+      }
+    }
+
+    function showNews() {
+      const pending = news.filter(item => item.status === "pending");
+      document.getElementById("count").textContent = pending.length;
+
+      const list = document.getElementById("newsList");
+      list.innerHTML = "";
+
+      if (!pending.length) {
+        list.textContent = "कोई लंबित समाचार नहीं है।";
+        return;
+      }
+
+      pending.forEach(item => {
+        const card = document.createElement("article");
+        card.className = "news-card";
+
+        const title = document.createElement("h3");
+        title.textContent = item.title;
+
+        const description = document.createElement("p");
+        description.textContent = item.description || "विवरण उपलब्ध नहीं है।";
+
+        const meta = document.createElement("p");
+        meta.className = "meta";
+        meta.textContent = "स्रोत: " + item.source +
+          " | तारीख: " + (item.publishedAt || "उपलब्ध नहीं");
+
+        const open = document.createElement("a");
+        open.href = item.link;
+        open.target = "_blank";
+        open.rel = "noopener noreferrer";
+        open.textContent = "मूल खबर पढ़ें";
+
+        const approve = document.createElement("button");
+        approve.className = "approve";
+        approve.textContent = "मंजूर करें";
+        approve.onclick = () => updateStatus(item.id, "approved");
+
+        const reject = document.createElement("button");
+        reject.className = "reject";
+        reject.textContent = "अस्वीकार करें";
+        reject.onclick = () => updateStatus(item.id, "rejected");
+
+        card.append(title, description, meta, open, document.createElement("br"), approve, reject);
+        list.appendChild(card);
+      });
+    }
+
+    function updateStatus(id, status) {
+      news = news.map(item =>
+        item.id === id ? { ...item, status } : item
+      );
+
+      showNews();
+
+      document.getElementById("message").textContent =
+        status === "approved"
+          ? "खबर मंजूर की गई है।"
+          : "खबर अस्वीकार की गई है।";
+
+      localStorage.setItem("nagrikPrahariNewsReview", JSON.stringify(news));
+    }
+
+    loadNews();
+  </script>
+</body>
+</html>

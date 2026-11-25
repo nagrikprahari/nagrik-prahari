@@ -1,0 +1,246 @@
+
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>नागरिक प्रहरी - News Admin</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f3f4f6;
+      margin: 0;
+      padding: 20px;
+      color: #222;
+    }
+    .container {
+      max-width: 950px;
+      margin: auto;
+    }
+    h1 { color: #17365d; }
+    .top {
+      background: white;
+      padding: 18px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+    button {
+      border: 0;
+      padding: 10px 15px;
+      margin: 5px 5px 5px 0;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .download { background: #17365d; color: white; }
+    .approve { background: #16803c; color: white; }
+    .reject { background: #c62828; color: white; }
+    .news-card {
+      background: white;
+      padding: 18px;
+      margin-bottom: 15px;
+      border-radius: 9px;
+      border-left: 5px solid #17365d;
+    }
+    .meta { color: #666; font-size: 13px; }
+    a { color: #075db5; }
+    #message { color: #16803c; font-weight: bold; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>नागरिक प्रहरी - समाचार समीक्षा</h1>
+
+  <div class="top">
+    <p>लंबित खबरें: <strong id="count">0</strong></p>
+    <p>मंजूर खबरें: <strong id="approvedCount">0</strong></p>
+    <button class="download" onclick="downloadApproved()">
+      मंजूर खबरें डाउनलोड करें
+    </button>
+    <p id="message"></p>
+    <p class="meta">
+      ध्यान दें: खबर को मंजूर करने से पहले मूल स्रोत पर जरूर जांचें।
+    </p>
+  </div>
+
+  
+<div style="margin-bottom:15px;">
+  <label for="categoryFilter">खबर की श्रेणी चुनें:</label>
+  <select id="categoryFilter" onchange="showNews()" style="padding:10px; margin:8px;">
+    <option value="all">सभी श्रेणियाँ</option>
+    <option value="देश">देश</option>
+    <option value="राजनीति">राजनीति</option>
+    <option value="विदेश">विदेश</option>
+    <option value="सामान्य">सामान्य</option>
+    <option value="सोशल मीडिया">सोशल मीडिया</option>
+    <option value="खेल जगत">खेल जगत</option>
+    <option value="फिल्मी दुनिया">फिल्मी दुनिया</option>
+    <option value="शिक्षा">शिक्षा</option>
+    <option value="कानून">कानून</option>
+  </select>
+</div>
+
+<div id="newsList">खबरें लोड हो रही हैं...</div>
+
+</div>
+
+<script>
+const MAX_AGE_MS = 24 * 60 * 60 * 1000;
+let news = [];
+
+function isRecent(dateValue) {
+  if (!dateValue) return false;
+
+  const date = Date.parse(dateValue);
+  if (!Number.isFinite(date)) return false;
+
+  const age = Date.now() - date;
+  return age >= -5 * 60 * 1000 && age <= MAX_AGE_MS;
+}
+
+async function loadNews() {
+  try {
+    const response = await fetch("./news-data/pending-news.json");
+
+    if (!response.ok) {
+      throw new Error("समाचार फाइल नहीं मिली");
+    }
+
+    const fileNews = await response.json();
+
+    const saved = JSON.parse(
+      localStorage.getItem("nagrikPrahariNewsReview") || "[]"
+    );
+
+    const savedStatuses = new Map(
+      saved
+        .filter(item =>
+          item &&
+          typeof item.id === "string" &&
+          ["pending", "approved", "rejected"].includes(item.status)
+        )
+        .map(item => [item.id, item.status])
+    );
+
+    news = fileNews.map(item => ({
+      ...item,
+      status: savedStatuses.get(item.id) || item.status || "pending"
+    }));
+
+    showNews();
+  } catch (error) {
+    document.getElementById("newsList").textContent =
+      "खबरें लोड नहीं हुईं। लोकल सर्वर चालू है या नहीं जांचें।";
+  }
+}
+
+function saveReview() {
+  localStorage.setItem(
+    "nagrikPrahariNewsReview",
+    JSON.stringify(news)
+  );
+}
+
+
+function showNews() {
+  const selectedCategory =
+    document.getElementById("categoryFilter")?.value || "all";
+
+  const pending = news.filter(item =>
+    item.status === "pending" &&
+    isRecent(item.publishedAt) &&
+    (selectedCategory === "all" || item.category === selectedCategory)
+  );
+
+  const approved = news.filter(item =>
+    item.status === "approved" && isRecent(item.publishedAt)
+  );
+
+  document.getElementById("count").textContent = pending.length;
+  document.getElementById("approvedCount").textContent = approved.length;
+
+  const list = document.getElementById("newsList");
+  list.innerHTML = "";
+
+  if (pending.length === 0) {
+    list.textContent = "इस श्रेणी में कोई नई लंबित खबर उपलब्ध नहीं है।";
+    return;
+  }
+
+  pending.forEach(item => {
+    const card = document.createElement("article");
+    card.className = "news-card";
+
+    const title = document.createElement("h3");
+    title.textContent = item.title || "शीर्षक उपलब्ध नहीं";
+
+    const description = document.createElement("p");
+    description.textContent = item.description || "विवरण उपलब्ध नहीं";
+
+    const meta = document.createElement("p");
+    meta.className = "meta";
+    meta.textContent =
+      "श्रेणी: " + (item.category || "सामान्य") +
+      " | स्रोत: " + (item.source || "अज्ञात") +
+      " | तारीख: " + item.publishedAt;
+
+    const open = document.createElement("a");
+    open.href = item.link;
+    open.target = "_blank";
+    open.rel = "noopener noreferrer";
+    open.textContent = "मूल खबर पढ़ें";
+
+    const approve = document.createElement("button");
+    approve.className = "approve";
+    approve.textContent = "मंजूर करें";
+    approve.onclick = () => updateStatus(item.id, "approved");
+
+    const reject = document.createElement("button");
+    reject.className = "reject";
+    reject.textContent = "अस्वीकार करें";
+    reject.onclick = () => updateStatus(item.id, "rejected");
+
+    card.append(
+      title, description, meta, open,
+      document.createElement("br"),
+      approve, reject
+    );
+
+    list.appendChild(card);
+  });
+}
+
+
+function downloadApproved() {
+  const approved = news.filter(item =>
+    item.status === "approved" &&
+    isRecent(item.publishedAt)
+  );
+
+  if (approved.length === 0) {
+    alert("डाउनलोड करने के लिए कोई ताजा मंजूर खबर नहीं है।");
+    return;
+  }
+
+  const blob = new Blob(
+    [JSON.stringify(approved, null, 2)],
+    { type: "application/json" }
+  );
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = "published-news.json";
+  link.click();
+
+  URL.revokeObjectURL(url);
+
+  document.getElementById("message").textContent =
+    approved.length + " मंजूर खबरों की फाइल डाउनलोड की गई।";
+}
+
+loadNews();
+</script>
+</body>
+</html>
