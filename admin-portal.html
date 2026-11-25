@@ -241,10 +241,14 @@ $("savePasswordBtn").addEventListener("click", async () => {
   msg("पासवर्ड सफलतापूर्वक बदल गया। अब नए पासवर्ड से Login करें।");
   $("resetPanel").style.display = "none";
   $("newPassword").value = "";
+  recoveryMode = false;
+  window.history.replaceState({}, document.title, window.location.pathname);
   await db.auth.signOut();
 });
 
 $("cancelResetBtn").addEventListener("click", async () => {
+  recoveryMode = false;
+  window.history.replaceState({}, document.title, window.location.pathname);
   await db.auth.signOut();
   $("resetPanel").style.display = "none";
   $("loginBtn").style.display = "inline-block";
@@ -280,6 +284,20 @@ db.auth.onAuthStateChange((event, session) => {
     return;
   }
   if (event === "SIGNED_OUT") {
+    const recoveryUrl =
+      new URLSearchParams(window.location.search).get("flow") === "recovery" ||
+      window.location.hash.includes("type=recovery");
+
+    if (recoveryMode || recoveryUrl) {
+      recoveryMode = true;
+      $("login").style.display = "block";
+      $("app").style.display = "none";
+      $("resetPanel").style.display = "block";
+      $("loginBtn").style.display = "none";
+      $("forgotBtn").style.display = "none";
+      return;
+    }
+
     recoveryMode = false;
     $("app").style.display = "none";
     $("login").style.display = "block";
