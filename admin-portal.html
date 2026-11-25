@@ -59,27 +59,23 @@ small,.muted{color:#64748b}.article{border:1px solid #e1e6ed;border-radius:9px;p
 const SUPABASE_URL = "https://sffmbrjuokglvpjcnfbo.supabase.co";
 const SUPABASE_KEY = "sb_publishable_aDGRC0AmlV5GEFF-b4wEcA_YNUbU9mA";
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const $ = id => document.getElementById(id);
+
 let currentUser = null;
 let currentRole = null;
+
 let recoveryMode =
   new URLSearchParams(window.location.search).get("flow") === "recovery" ||
   window.location.hash.includes("type=recovery");
-if (recoveryMode) {
-  $("login").style.display = "block";
-  $("app").style.display = "none";
-  $("resetPanel").style.display = "block";
-  $("loginBtn").style.display = "none";
-  $("forgotBtn").style.display = "none";
-}
-if (recoveryMode) {
-  $("login").style.display = "block";
-  $("app").style.display = "none";
-  $("resetPanel").style.display = "block";
-  $("loginBtn").style.display = "none";
-  $("forgotBtn").style.display = "none";
-}
 
-const $ = id => document.getElementById(id);
+if (recoveryMode) {
+  $("login").style.display = "block";
+  $("app").style.display = "none";
+  $("resetPanel").style.display = "block";
+  $("loginBtn").style.display = "none";
+  $("forgotBtn").style.display = "none";
+}
 const msg = (text, error=false) => {
   $("message").textContent = text;
   $("message").style.color = error ? "#b52b35" : "#16834a";
