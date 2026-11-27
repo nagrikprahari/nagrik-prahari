@@ -15,6 +15,7 @@ button:disabled{opacity:.5;cursor:not-allowed}.green{background:#16834a}.red{bac
 small,.muted{color:#64748b}.article{border:1px solid #e1e6ed;border-radius:9px;padding:15px;margin:12px 0}
 .article h3{margin:4px 0 10px}.meta{font-size:13px;color:#64748b;margin:7px 0}
 #app{display:none}#message{white-space:pre-wrap;margin:10px 0;color:#a12b2b}
+.article-image{display:block;width:100%;max-height:220px;object-fit:cover;border-radius:7px;margin:0 0 12px;background:#edf2f7}
 </style>
 </head>
 <body>
@@ -102,7 +103,7 @@ async function openDashboard(user) {
     return;
   }
   currentRole = profile.role;
-  if (!["super_admin","news_admin"].includes(currentRole)) {
+  if (!["super_admin","news_admin","chief_news_admin"].includes(currentRole)) {
     msg("इस अकाउंट को Admin Portal की अनुमति नहीं है।",true);
     await db.auth.signOut();
     return;
@@ -111,9 +112,12 @@ async function openDashboard(user) {
   $("app").style.display = "block";
   $("logout").style.display = "inline-block";
   $("welcome").textContent = "स्वागत है, " + (profile.full_name || profile.email);
-  $("role").textContent = currentRole === "super_admin"
-    ? "भूमिका: Super Admin — पूर्ण नियंत्रण"
-    : "भूमिका: News Admin — खबरों की समीक्षा";
+  $("role").textContent =
+    currentRole === "super_admin"
+      ? "भूमिका: Super Admin — पूर्ण नियंत्रण"
+      : currentRole === "chief_news_admin"
+        ? "भूमिका: Chief News Admin — टीम संचालन और खबरों की समीक्षा"
+        : "भूमिका: News Admin — खबरों की समीक्षा";
   $("importBtn").style.display = currentRole === "super_admin" ? "inline-block" : "none";
   await loadArticles();
 }
@@ -121,7 +125,7 @@ async function openDashboard(user) {
 async function loadArticles() {
   $("articles").textContent = "खबरें लोड हो रही हैं...";
   const {data,error} = await db.from("articles")
-    .select("id,title,description,source,source_url,category,status,published_at,created_at")
+    .select("id,title,description,source,source_url,image_url,category,status,published_at,created_at")
     .order("created_at",{ascending:false}).limit(500);
   if (error) {
     $("articles").textContent = "खबरें लोड नहीं हुईं: " + error.message;
@@ -136,12 +140,13 @@ async function loadArticles() {
   }
   $("articles").innerHTML = list.map(a => `
     <div class="article">
+      ${a.image_url ? `<img class="article-image" src="${esc(a.image_url)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ""}
       <h3>${esc(a.title)}</h3>
       <div class="meta">${esc(a.category || "सामान्य")} · ${esc(a.source || "अज्ञात स्रोत")} · स्थिति: <b>${esc(a.status)}</b></div>
       <p>${esc(a.description || "")}</p>
       ${a.source_url ? `<a href="${esc(a.source_url)}" target="_blank" rel="noopener">मूल खबर पढ़ें</a>` : ""}
       <div>
-        ${currentRole === "news_admin" && a.status !== "published" ? `
+        ${["news_admin","chief_news_admin"].includes(currentRole) && a.status !== "published" ? `
           <button class="green" data-action="approve" data-id="${esc(a.id)}">Approve</button>
           <button class="red" data-action="reject" data-id="${esc(a.id)}">Reject</button>` : ""}
         ${currentRole === "super_admin" && a.status !== "published" ? `
@@ -196,6 +201,7 @@ async function importPending() {
         content:null,
         source:n.source || null,
         source_url:n.link,
+        image_url:n.imageUrl || null,
         category:n.category || "सामान्य",
         status:"pending",
         published_at:n.publishedAt || null,
