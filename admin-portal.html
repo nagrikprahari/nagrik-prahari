@@ -49,6 +49,19 @@ small,.muted{color:#64748b}.article{border:1px solid #e1e6ed;border-radius:9px;p
       <p id="notice" class="muted"></p>
     </div>
     <div class="panel">
+      <div class="panel" id="managementPanel" style="display:none">
+        <h2>आंतरिक प्रबंधन (Internal Management)</h2>
+        <p class="muted">टीम की बैठकें, शिकायतें, योजनाएँ और आंतरिक समन्वय।</p>
+        <div id="managementTabs" style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0">
+          <button data-module="meetings">Meetings</button>
+          <button data-module="complaints">Complaints</button>
+          <button data-module="plans">Planning</button>
+          <button data-module="strategies">Strategies</button>
+          <button data-module="tasks">Tasks & Follow-ups</button>
+          <button data-module="notices">Internal Notices</button>
+        </div>
+        <div id="managementContent">Management डेटा लोड हो रहा है...</div>
+      </div>
       <h2>खबरों की समीक्षा</h2>
       <div id="articleTabs" style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0"></div>
       <div id="articles">खबरें लोड हो रही हैं...</div>
@@ -120,7 +133,16 @@ async function openDashboard(user) {
         ? "भूमिका: Chief News Admin — टीम संचालन और खबरों की समीक्षा"
         : "भूमिका: News Admin — खबरों की समीक्षा";
   $("importBtn").style.display = currentRole === "super_admin" ? "inline-block" : "none";
+
+  const canUseManagement = ["super_admin","chief_news_admin"].includes(currentRole);
+  $("managementPanel").style.display = canUseManagement ? "block" : "none";
+
   await loadArticles();
+
+  if (canUseManagement) {
+    activeManagementModule = "meetings";
+    await loadManagement();
+  }
 }
 
 let activeArticleTab = "pending";
@@ -251,6 +273,356 @@ async function importPending() {
     note("Import में समस्या: " + (e.message || e));
   }
 }
+
+const managementModules = {
+  meetings: {
+    table:"internal_meetings",
+    label:"Meetings",
+    fields:[
+      {key:"title",label:"बैठक का विषय",required:true},
+      {key:"agenda",label:"Agenda",type:"textarea"},
+      {key:"starts_at",label:"बैठक की तारीख और समय",type:"datetime-local"},
+      {key:"attendees",label:"प्रतिभागी"},
+      {key:"minutes",label:"बैठक का विवरण / Minutes",type:"textarea"}
+    ],
+    primaryField:"agenda"
+  },
+  complaints: {
+    table:"internal_complaints",
+    label:"Complaints",
+    fields:[
+      {key:"title",label:"शिकायत का विषय",required:true},
+      {key:"description",label:"शिकायत का विवरण",type:"textarea",required:true},
+      {key:"severity",label:"गंभीरता",type:"select",required:true,
+       options:["normal","important","serious"]}
+    ],
+    primaryField:"description"
+  },
+  plans: {
+    table:"internal_plans",
+    label:"Planning",
+    fields:[
+      {key:"title",label:"योजना का नाम",required:true},
+      {key:"details",label:"योजना का विवरण",type:"textarea"},
+      {key:"target_date",label:"लक्ष्य की तारीख",type:"date"},
+      {key:"status",label:"स्थिति",type:"select",
+       options:["planned","in_progress","completed","on_hold"]}
+    ],
+    primaryField:"details"
+  },
+  strategies: {
+    table:"internal_strategies",
+    label:"Strategies",
+    fields:[
+      {key:"title",label:"रणनीति का नाम",required:true},
+      {key:"category",label:"श्रेणी"},
+      {key:"details",label:"रणनीति का विवरण",type:"textarea"},
+      {key:"status",label:"स्थिति",type:"select",
+       options:["idea","under_review","approved","active","archived"]}
+    ],
+    primaryField:"details"
+  },
+  tasks: {
+    table:"internal_tasks",
+    label:"Tasks & Follow-ups",
+    fields:[
+      {key:"title",label:"कार्य का नाम",required:true},
+      {key:"details",label:"कार्य का विवरण",type:"textarea"},
+      {key:"assigned_to",label:"Assigned User UUID (वैकल्पिक)"},
+      {key:"due_date",label:"अंतिम तारीख",type:"date"},
+      {key:"status",label:"स्थिति",type:"select",
+       options:["pending","in_progress","completed"]}
+    ],
+    primaryField:"details"
+  },
+  notices: {
+    table:"internal_notices",
+    label:"Internal Notices",
+    fields:[
+      {key:"title",label:"सूचना का शीर्षक",required:true},
+      {key:"body",label:"सूचना",type:"textarea",required:true},
+      {key:"expires_at",label:"समाप्ति की तारीख",type:"datetime-local"}
+    ],
+    primaryField:"body"
+  }
+};
+
+let activeManagementModule = "meetings";
+let managementRows = [];
+let editingManagementId = null;
+
+function managementInputValue(field, value) {
+  if (!value) return "";
+  if (field.type === "datetime-local") {
+    return String(value).slice(0,16);
+  }
+  return String(value);
+}
+
+function renderManagementForm(config, record = null) {
+  const fields = config.fields.map(field => {
+    const value = managementInputValue(field, record?.[field.key]);
+    const required = field.required ? "required" : "";
+
+    if (field.type === "textarea") {
+      return `<label>${esc(field.label)}
+        <textarea name="${esc(field.key)}" ${required}
+          rows="3">${esc(value)}</textarea></label>`;
+    }
+
+    if (field.type === "select") {
+      return `<label>${esc(field.label)}
+        <select name="${esc(field.key)}" ${required}>
+          ${(field.options || []).map(option =>
+            `<option value="${esc(option)}" ${value === option ? "selected" : ""}>${esc(option)}</option>`
+          ).join("")}
+        </select></label>`;
+    }
+
+    return `<label>${esc(field.label)}
+      <input name="${esc(field.key)}" type="${esc(field.type || "text")}"
+        value="${esc(value)}" ${required}>
+      </label>`;
+  }).join("");
+
+  return `<div class="article">
+    <h3>${record ? "रिकॉर्ड Edit करें" : "नया रिकॉर्ड जोड़ें"}</h3>
+    <form id="managementForm">
+      ${fields}
+      <button class="green" type="submit">${record ? "Update करें" : "Add करें"}</button>
+      ${record ? '<button type="button" class="grey" data-cancel-edit>Cancel</button>' : ""}
+    </form>
+  </div>`;
+}
+
+async function loadManagement() {
+  const config = managementModules[activeManagementModule];
+  const area = $("managementContent");
+
+  area.innerHTML = "डेटा लोड हो रहा है...";
+
+  const {data,error} = await db.from(config.table)
+    .select("*")
+    .order("created_at",{ascending:false})
+    .limit(200);
+
+  if (error) {
+    area.textContent = "डेटा लोड नहीं हुआ: " + error.message;
+    return;
+  }
+
+  managementRows = data || [];
+
+  const editingRecord = editingManagementId
+    ? managementRows.find(row => row.id === editingManagementId)
+    : null;
+
+  const canManage = currentRole === "super_admin";
+
+  const cards = managementRows.map(record => {
+    const primary = record[config.primaryField] || "";
+    const complaint = activeManagementModule === "complaints";
+
+    return `<div class="article">
+      <h3>${esc(record.title)}</h3>
+      <div class="meta">
+        ${complaint ? "गंभीरता: " + esc(record.severity) + " · " : ""}
+        स्थिति: ${esc(record.status || "दर्ज")}
+      </div>
+      <p>${esc(primary)}</p>
+      <small>दर्ज: ${esc(record.created_at || "")}</small>
+      <div style="margin-top:10px">
+        ${canManage ? `
+          <button data-mgmt-edit="${esc(record.id)}">Edit</button>
+          <button class="red" data-mgmt-delete="${esc(record.id)}">Delete</button>
+        ` : ""}
+        ${complaint ? `
+          <button class="green" data-complaint-update="${esc(record.id)}">Resolution Update</button>
+          ${canManage && record.severity === "serious" && record.status !== "closed" ? `
+            <button class="red" data-complaint-final="${esc(record.id)}">Final Submit & Close</button>
+          ` : ""}
+        ` : ""}
+      </div>
+    </div>`;
+  }).join("");
+
+  const tabs = document.querySelectorAll("#managementTabs button");
+  tabs.forEach(button => {
+    button.className =
+      button.dataset.module === activeManagementModule ? "green" : "grey";
+  });
+
+  area.innerHTML =
+    renderManagementForm(config, editingRecord) +
+    (cards || '<p class="muted">अभी कोई रिकॉर्ड उपलब्ध नहीं है।</p>');
+}
+
+$("managementTabs").addEventListener("click", async event => {
+  const button = event.target.closest("button[data-module]");
+  if (!button) return;
+
+  activeManagementModule = button.dataset.module;
+  editingManagementId = null;
+  await loadManagement();
+});
+
+$("managementContent").addEventListener("submit", async event => {
+  const form = event.target.closest("#managementForm");
+  if (!form) return;
+
+  event.preventDefault();
+
+  const config = managementModules[activeManagementModule];
+  const payload = {};
+
+  for (const field of config.fields) {
+    let value = form.elements[field.key].value.trim();
+
+    if (field.type === "datetime-local" && value) {
+      value = new Date(value).toISOString();
+    }
+
+    if (field.key === "assigned_to" && !value) value = null;
+    else if (!value) value = null;
+
+    payload[field.key] = value;
+  }
+
+  payload.updated_at = new Date().toISOString();
+
+  let result;
+
+  if (editingManagementId) {
+    result = await db.from(config.table)
+      .update(payload)
+      .eq("id",editingManagementId);
+  } else {
+    payload.created_by = currentUser.id;
+    result = await db.from(config.table).insert(payload);
+  }
+
+  if (result.error) {
+    alert("सेव नहीं हुआ: " + result.error.message);
+    return;
+  }
+
+  editingManagementId = null;
+  note("Management रिकॉर्ड सफलतापूर्वक सेव हुआ।");
+  await loadManagement();
+});
+
+$("managementContent").addEventListener("click", async event => {
+  const editButton = event.target.closest("[data-mgmt-edit]");
+  const deleteButton = event.target.closest("[data-mgmt-delete]");
+  const cancelButton = event.target.closest("[data-cancel-edit]");
+  const complaintButton = event.target.closest("[data-complaint-update]");
+  const finalButton = event.target.closest("[data-complaint-final]");
+
+  if (cancelButton) {
+    editingManagementId = null;
+    await loadManagement();
+    return;
+  }
+
+  if (editButton) {
+    if (currentRole !== "super_admin") return;
+    editingManagementId = editButton.dataset.mgmtEdit;
+    await loadManagement();
+    return;
+  }
+
+  if (deleteButton) {
+    if (currentRole !== "super_admin") return;
+    if (!confirm("क्या आप यह रिकॉर्ड स्थायी रूप से Delete करना चाहते हैं?")) return;
+
+    const config = managementModules[activeManagementModule];
+    const {error} = await db.from(config.table)
+      .delete().eq("id",deleteButton.dataset.mgmtDelete);
+
+    if (error) {
+      alert("Delete नहीं हुआ: " + error.message);
+      return;
+    }
+
+    note("रिकॉर्ड Delete हो गया।");
+    await loadManagement();
+    return;
+  }
+
+  if (complaintButton) {
+    const record = managementRows.find(row =>
+      row.id === complaintButton.dataset.complaintUpdate
+    );
+    if (!record) return;
+
+    const choices = record.severity === "serious"
+      ? ["new","in_progress","awaiting_super_admin"]
+      : ["new","in_progress","resolved","closed"];
+
+    const status = prompt(
+      "नई स्थिति चुनें: " + choices.join(", "),
+      record.status
+    );
+
+    if (!status) return;
+    if (!choices.includes(status)) {
+      alert("यह स्थिति इस शिकायत के लिए अनुमत नहीं है।");
+      return;
+    }
+
+    const resolution = prompt(
+      "जाँच / समाधान की जानकारी लिखें:",
+      record.resolution_notes || ""
+    );
+
+    if (resolution === null) return;
+
+    const {error} = await db.from("internal_complaints")
+      .update({
+        status,
+        resolution_notes:resolution,
+        updated_at:new Date().toISOString()
+      })
+      .eq("id",record.id);
+
+    if (error) {
+      alert("Resolution Update नहीं हुआ: " + error.message);
+      return;
+    }
+
+    note("शिकायत की प्रगति अपडेट हो गई।");
+    await loadManagement();
+    return;
+  }
+
+  if (finalButton) {
+    if (currentRole !== "super_admin") return;
+
+    const record = managementRows.find(row =>
+      row.id === finalButton.dataset.complaintFinal
+    );
+    if (!record || record.severity !== "serious") return;
+
+    if (!confirm("क्या आप इस गंभीर शिकायत को Final Submit करके Close करना चाहते हैं?")) return;
+
+    const {error} = await db.from("internal_complaints")
+      .update({
+        status:"closed",
+        final_submitted_at:new Date().toISOString(),
+        final_submitted_by:currentUser.id,
+        updated_at:new Date().toISOString()
+      })
+      .eq("id",record.id);
+
+    if (error) {
+      alert("Final Submit नहीं हुआ: " + error.message);
+      return;
+    }
+
+    note("गंभीर शिकायत Final Submit करके Close कर दी गई।");
+    await loadManagement();
+  }
+});
 
 $("forgotBtn").addEventListener("click", async () => {
   const email = $("email").value.trim();
