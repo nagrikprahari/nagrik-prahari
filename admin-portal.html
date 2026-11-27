@@ -50,6 +50,7 @@ small,.muted{color:#64748b}.article{border:1px solid #e1e6ed;border-radius:9px;p
     </div>
     <div class="panel">
       <h2>खबरों की समीक्षा</h2>
+      <div id="articleTabs" style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0"></div>
       <div id="articles">खबरें लोड हो रही हैं...</div>
     </div>
   </section>
@@ -122,22 +123,41 @@ async function openDashboard(user) {
   await loadArticles();
 }
 
+let activeArticleTab = "pending";
+
 async function loadArticles() {
   $("articles").textContent = "खबरें लोड हो रही हैं...";
   const {data,error} = await db.from("articles")
     .select("id,title,description,source,source_url,image_url,category,status,published_at,created_at")
     .order("created_at",{ascending:false}).limit(500);
+
   if (error) {
     $("articles").textContent = "खबरें लोड नहीं हुईं: " + error.message;
     return;
   }
-  const list = (data || []).filter(a =>
-    ["pending","approved","rejected","draft"].includes(a.status)
-  );
+
+  const allArticles = data || [];
+  const tabs = [
+    {id:"pending", label:"लंबित (Pending)"},
+    {id:"approved", label:"स्वीकृत (Approved)"},
+    {id:"published", label:"प्रकाशित (Published)"},
+    {id:"rejected", label:"अस्वीकृत (Rejected)"},
+    {id:"draft", label:"ड्राफ्ट (Draft)"}
+  ];
+
+  $("articleTabs").innerHTML = tabs.map(tab => {
+    const count = allArticles.filter(a => a.status === tab.id).length;
+    return `<button class="${activeArticleTab === tab.id ? "green" : "grey"}"
+      data-tab="${tab.id}">${tab.label} (${count})</button>`;
+  }).join("");
+
+  const list = allArticles.filter(a => a.status === activeArticleTab);
+
   if (!list.length) {
-    $("articles").textContent = "अभी Database में कोई समीक्षा योग्य खबर नहीं है। JSON Import करें।";
+    $("articles").textContent = "इस श्रेणी में अभी कोई खबर नहीं है।";
     return;
   }
+
   $("articles").innerHTML = list.map(a => `
     <div class="article">
       ${a.image_url ? `<img class="article-image" src="${esc(a.image_url)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ""}
@@ -146,16 +166,23 @@ async function loadArticles() {
       <p>${esc(a.description || "")}</p>
       ${a.source_url ? `<a href="${esc(a.source_url)}" target="_blank" rel="noopener">मूल खबर पढ़ें</a>` : ""}
       <div>
-        ${["news_admin","chief_news_admin"].includes(currentRole) && a.status !== "published" ? `
+        ${["news_admin","chief_news_admin"].includes(currentRole) && ["pending","draft"].includes(a.status) ? `
           <button class="green" data-action="approve" data-id="${esc(a.id)}">Approve</button>
           <button class="red" data-action="reject" data-id="${esc(a.id)}">Reject</button>` : ""}
-        ${currentRole === "super_admin" && a.status !== "published" ? `
-          <button class="green" data-action="publish" data-id="${esc(a.id)}">Publish</button>
+        ${currentRole === "super_admin" && a.status === "approved" ? `
+          <button class="green" data-action="publish" data-id="${esc(a.id)}">Final Publish</button>` : ""}
+        ${currentRole === "super_admin" && ["pending","approved","draft"].includes(a.status) ? `
           <button class="red" data-action="reject" data-id="${esc(a.id)}">Reject</button>` : ""}
       </div>
     </div>`).join("");
 }
 
+$("articleTabs").addEventListener("click", async e => {
+  const b = e.target.closest("button[data-tab]");
+  if (!b) return;
+  activeArticleTab = b.dataset.tab;
+  await loadArticles();
+});
 async function changeStatus(id,status) {
   if (status === "published" && currentRole !== "super_admin") {
     alert("Publish अधिकार केवल Super Admin के पास है।"); return;
