@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="hi">
 <head>
 <meta charset="UTF-8">
@@ -9,13 +9,22 @@
 *{box-sizing:border-box}body{margin:0;background:#f2f4f8;font-family:Arial,sans-serif;color:#182230}
 header{background:#142b4a;color:white;padding:18px 5%;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 main{max-width:1100px;margin:25px auto;padding:0 15px}.panel{background:white;padding:22px;border-radius:12px;margin-bottom:18px;box-shadow:0 2px 12px #0000000b}
-input{display:block;width:100%;padding:12px;margin:10px 0;border:1px solid #ccd3dd;border-radius:7px}
+input,textarea,select{display:block;width:100%;padding:12px;margin:10px 0;border:1px solid #ccd3dd;border-radius:7px;font:inherit}textarea{min-height:130px;resize:vertical}
 button{border:0;border-radius:7px;padding:10px 15px;margin:4px;cursor:pointer;background:#174c83;color:white}
 button:disabled{opacity:.5;cursor:not-allowed}.green{background:#16834a}.red{background:#b52b35}.grey{background:#596579}
 small,.muted{color:#64748b}.article{border:1px solid #e1e6ed;border-radius:9px;padding:15px;margin:12px 0}
 .article h3{margin:4px 0 10px}.meta{font-size:13px;color:#64748b;margin:7px 0}
 #app{display:none}#message{white-space:pre-wrap;margin:10px 0;color:#a12b2b}
 .article-image{display:block;width:100%;max-height:220px;object-fit:cover;border-radius:7px;margin:0 0 12px;background:#edf2f7}
+.leadership-emblem{align-items:center;gap:18px;margin:18px 0 6px;padding:16px;border:1px solid #d9c18a;border-radius:12px;background:linear-gradient(120deg,#fffdf7,#f1f4f8);max-width:680px}
+.emblem-mark{width:92px;min-width:92px}
+.emblem-mark svg{display:block;width:100%;height:auto;filter:drop-shadow(0 3px 3px #0002)}
+.emblem-copy{line-height:1.5}
+.emblem-brand{font-size:12px;font-weight:800;letter-spacing:2px;color:#9a762d}
+.emblem-name{font-size:20px;font-weight:800;color:#142b4a;margin:3px 0}
+.emblem-title{font-size:13px;font-weight:700;color:#263d59}
+.emblem-subtitle{font-size:11px;letter-spacing:1.5px;color:#9a762d;margin-top:4px}
+@media(max-width:480px){.leadership-emblem{gap:12px;padding:12px}.emblem-mark{width:72px;min-width:72px}.emblem-name{font-size:17px}.emblem-title{font-size:11px}}
 </style>
 </head>
 <body>
@@ -44,6 +53,7 @@ small,.muted{color:#64748b}.article{border:1px solid #e1e6ed;border-radius:9px;p
     <div class="panel">
       <h2 id="welcome">Admin Dashboard</h2>
       <p id="role"></p>
+<div id="leadershipEmblem" class="leadership-emblem" style="display:none"></div>
       <button id="importBtn">Pending JSON से खबरें Import करें</button>
       <button id="refreshBtn" class="grey">Refresh</button>
       <p id="notice" class="muted"></p>
@@ -61,6 +71,12 @@ small,.muted{color:#64748b}.article{border:1px solid #e1e6ed;border-radius:9px;p
           <button data-module="notices">Internal Notices</button>
         </div>
         <div id="managementContent">Management डेटा लोड हो रहा है...</div>
+      </div>
+      <div id="authorEditor" class="panel" style="display:none">
+        <h2>News Author — खबर लिखें</h2>
+        <p class="muted">अपनी खबर लिखें, Draft सुरक्षित करें या समीक्षा के लिए भेजें।</p>
+        <button id="newAuthorArticle" class="green" type="button">+ नई खबर लिखें</button>
+        <div id="authorEditorForm"></div>
       </div>
       <h2>खबरों की समीक्षा</h2>
       <div id="articleTabs" style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0"></div>
@@ -117,7 +133,7 @@ async function openDashboard(user) {
     return;
   }
   currentRole = profile.role;
-  if (!["super_admin","news_admin","chief_news_admin"].includes(currentRole)) {
+  if (!["super_admin","news_admin","chief_news_admin","news_author"].includes(currentRole)) {
     msg("इस अकाउंट को Admin Portal की अनुमति नहीं है।",true);
     await db.auth.signOut();
     return;
@@ -125,14 +141,53 @@ async function openDashboard(user) {
   $("login").style.display = "none";
   $("app").style.display = "block";
   $("logout").style.display = "inline-block";
-  $("welcome").textContent = "स्वागत है, " + (profile.full_name || profile.email);
+  $("welcome").textContent =
+    currentRole === "super_admin"
+      ? "Welcome, " + (profile.full_name || "Ashish Nath Tiwari")
+      : currentRole === "chief_news_admin"
+        ? "Welcome, " + (profile.full_name || "Sanjeev")
+        : "Welcome, " + (profile.full_name || profile.email || "Admin");
   $("role").textContent =
     currentRole === "super_admin"
-      ? "भूमिका: Super Admin — पूर्ण नियंत्रण"
+      ? "Executive Leadership | Chairman · Managing Director · CEO"
       : currentRole === "chief_news_admin"
-        ? "भूमिका: Chief News Admin — टीम संचालन और खबरों की समीक्षा"
-        : "भूमिका: News Admin — खबरों की समीक्षा";
+        ? "President – Editorial & Operations"
+        : currentRole === "news_author"
+          ? "भूमिका: News Author — अपनी खबरें लिखें और समीक्षा के लिए भेजें"
+          : "भूमिका: News Admin — खबरों की समीक्षा";
+
+const emblem = $("leadershipEmblem");
+if (currentRole === "super_admin" || currentRole === "chief_news_admin") {
+  const isChairman = currentRole === "super_admin";
+  emblem.style.display = "flex";
+  emblem.innerHTML = `
+    <div class="emblem-mark">
+      <svg viewBox="0 0 100 100" role="img" aria-label="Nagrik Prahari Leadership Emblem">
+        <path d="M50 5 L88 20 L83 62 Q75 83 50 95 Q25 83 17 62 L12 20 Z"
+          fill="#142b4a" stroke="#c49a42" stroke-width="4"/>
+        <path d="M50 13 L80 25 L76 60 Q69 77 50 87 Q31 77 24 60 L20 25 Z"
+          fill="none" stroke="#f2d58b" stroke-width="1.5"/>
+        <circle cx="50" cy="42" r="19" fill="none" stroke="#f2d58b" stroke-width="2"/>
+        <path d="M31 42 Q50 31 69 42 Q50 53 31 42" fill="none" stroke="#f2d58b" stroke-width="2"/>
+        <path d="M50 23 Q41 42 50 61 Q59 42 50 23" fill="none" stroke="#f2d58b" stroke-width="2"/>
+        <path d="M35 65 L50 57 L65 65 L50 72 Z" fill="#f2d58b"/>
+        <path d="M50 57 L50 72" stroke="#142b4a" stroke-width="1.5"/>
+      </svg>
+    </div>
+    <div class="emblem-copy">
+      <div class="emblem-brand">NAGRIK PRAHARI</div>
+      <div class="emblem-name">${isChairman ? esc(profile.full_name || "Ashish Nath Tiwari") : esc(profile.full_name || "Sanjeev")}</div>
+      <div class="emblem-title">${isChairman
+        ? "CHAIRMAN · MANAGING DIRECTOR · CEO"
+        : "PRESIDENT – EDITORIAL & OPERATIONS"}</div>
+      <div class="emblem-subtitle">${isChairman ? "EXECUTIVE LEADERSHIP" : "EDITORIAL & OPERATIONS"}</div>
+    </div>`;
+} else {
+  emblem.style.display = "none";
+  emblem.innerHTML = "";
+}
   $("importBtn").style.display = currentRole === "super_admin" ? "inline-block" : "none";
+  $("authorEditor").style.display = currentRole === "news_author" ? "block" : "none";
 
   const canUseManagement = ["super_admin","chief_news_admin"].includes(currentRole);
   $("managementPanel").style.display = canUseManagement ? "block" : "none";
@@ -145,12 +200,137 @@ async function openDashboard(user) {
   }
 }
 
+let editingAuthorArticleId = null;
+
+function showAuthorEditor(article = null) {
+  if (currentRole !== "news_author") return;
+  if (article && (article.created_by !== currentUser.id || article.status === "published")) {
+    alert("आप केवल अपनी अप्रकाशित खबर edit कर सकते हैं।");
+    return;
+  }
+
+  editingAuthorArticleId = article?.id || null;
+  const a = article || {};
+  $("authorEditorForm").innerHTML = `
+    <form id="authorArticleForm" class="article">
+      <h3>${article ? "अपनी खबर Edit करें" : "नई खबर लिखें"}</h3>
+
+      <label>खबर का शीर्षक
+        <input name="title" required maxlength="250" value="${esc(a.title || "")}">
+      </label>
+
+      <label>संक्षिप्त विवरण
+        <textarea name="description" required maxlength="1500">${esc(a.description || "")}</textarea>
+      </label>
+
+      <label>पूरी खबर
+        <textarea name="content" required>${esc(a.content || "")}</textarea>
+      </label>
+
+      <label>श्रेणी
+        <input name="category" value="${esc(a.category || "")}" placeholder="देश, प्रदेश, राजनीति आदि">
+      </label>
+
+      <label>सामग्री का प्रकार
+        <select name="content_type">
+          ${["article","video","ground_report","interview"].map(v =>
+            `<option value="${v}" ${(a.content_type || "article") === v ? "selected" : ""}>${v}</option>`
+          ).join("")}
+        </select>
+      </label>
+
+      <label>फोटो URL (यदि उपलब्ध हो)
+        <input name="image_url" type="url" value="${esc(a.image_url || "")}">
+      </label>
+
+      <label>वीडियो URL (यदि उपलब्ध हो)
+        <input name="video_url" type="url" value="${esc(a.video_url || "")}">
+      </label>
+
+      <label>स्रोत का नाम
+        <input name="source" value="${esc(a.source || "")}">
+      </label>
+
+      <label>स्रोत का URL
+        <input name="source_url" type="url" value="${esc(a.source_url || "")}">
+      </label>
+
+      <button class="grey" type="submit" name="intent" value="draft">Draft सुरक्षित करें</button>
+      <button class="green" type="submit" name="intent" value="pending">समीक्षा के लिए भेजें</button>
+      <button class="red" type="button" id="cancelAuthorEdit">Cancel</button>
+    </form>`;
+  $("authorEditorForm").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+$("newAuthorArticle").addEventListener("click", () => showAuthorEditor());
+
+$("authorEditorForm").addEventListener("click", event => {
+  if (event.target.id === "cancelAuthorEdit") {
+    editingAuthorArticleId = null;
+    $("authorEditorForm").innerHTML = "";
+  }
+});
+
+$("authorEditorForm").addEventListener("submit", async event => {
+  const form = event.target.closest("#authorArticleForm");
+  if (!form) return;
+  event.preventDefault();
+
+  if (currentRole !== "news_author") return;
+
+  const intent = event.submitter?.value;
+  if (!["draft","pending"].includes(intent)) return;
+
+  const payload = {
+    title:form.elements.title.value.trim(),
+    description:form.elements.description.value.trim(),
+    content:form.elements.content.value.trim(),
+    category:form.elements.category.value.trim() || null,
+    content_type:form.elements.content_type.value,
+    content_origin:"original",
+    image_url:form.elements.image_url.value.trim() || null,
+    video_url:form.elements.video_url.value.trim() || null,
+    source:form.elements.source.value.trim() || null,
+    source_url:form.elements.source_url.value.trim() || null,
+    status:intent,
+    updated_at:new Date().toISOString()
+  };
+
+  if (!payload.title || !payload.description || !payload.content) {
+    alert("शीर्षक, संक्षिप्त विवरण और पूरी खबर भरना जरूरी है।");
+    return;
+  }
+
+  let result;
+  if (editingAuthorArticleId) {
+    result = await db.from("articles").update(payload)
+      .eq("id",editingAuthorArticleId)
+      .eq("created_by",currentUser.id);
+  } else {
+    result = await db.from("articles").insert({
+      ...payload,
+      created_by:currentUser.id
+    });
+  }
+
+  if (result.error) {
+    alert("खबर सुरक्षित नहीं हुई: " + result.error.message);
+    return;
+  }
+
+  editingAuthorArticleId = null;
+  $("authorEditorForm").innerHTML = "";
+  note(intent === "draft" ? "Draft सुरक्षित हो गया।" : "खबर समीक्षा के लिए भेज दी गई।");
+  activeArticleTab = intent;
+  await loadArticles();
+});
+
 let activeArticleTab = "pending";
 
 async function loadArticles() {
   $("articles").textContent = "खबरें लोड हो रही हैं...";
   const {data,error} = await db.from("articles")
-    .select("id,title,description,source,source_url,image_url,category,status,published_at,created_at")
+    .select("id,title,description,content,source,source_url,image_url,category,status,published_at,created_at,created_by,content_type,content_origin,video_url,media_urls,flash_until")
     .order("created_at",{ascending:false}).limit(500);
 
   if (error) {
@@ -186,12 +366,14 @@ async function loadArticles() {
       <h3>${esc(a.title)}</h3>
       <div class="meta">${esc(a.category || "सामान्य")} · ${esc(a.source || "अज्ञात स्रोत")} · स्थिति: <b>${esc(a.status)}</b></div>
       <p>${esc(a.description || "")}</p>
+      ${currentRole === "news_author" && a.created_by === currentUser.id && a.status !== "published" ? `
+        <button data-author-edit="${esc(a.id)}">अपनी खबर Edit करें</button>` : ""}
       ${a.source_url ? `<a href="${esc(a.source_url)}" target="_blank" rel="noopener">मूल खबर पढ़ें</a>` : ""}
       <div>
         ${["news_admin","chief_news_admin"].includes(currentRole) && ["pending","draft"].includes(a.status) ? `
           <button class="green" data-action="approve" data-id="${esc(a.id)}">Approve</button>
           <button class="red" data-action="reject" data-id="${esc(a.id)}">Reject</button>` : ""}
-        ${currentRole === "super_admin" && a.status === "approved" ? `
+        ${["super_admin","chief_news_admin"].includes(currentRole) && a.status === "approved" ? `
           <button class="green" data-action="publish" data-id="${esc(a.id)}">Final Publish</button>` : ""}
         ${currentRole === "super_admin" && ["pending","approved","draft"].includes(a.status) ? `
           <button class="red" data-action="reject" data-id="${esc(a.id)}">Reject</button>` : ""}
@@ -206,8 +388,8 @@ $("articleTabs").addEventListener("click", async e => {
   await loadArticles();
 });
 async function changeStatus(id,status) {
-  if (status === "published" && currentRole !== "super_admin") {
-    alert("Publish अधिकार केवल Super Admin के पास है।"); return;
+  if (status === "published" && !["super_admin","chief_news_admin"].includes(currentRole)) {
+    alert("Publish अधिकार केवल Super Admin और Chief News Admin के पास है।"); return;
   }
   if (!confirm("क्या आप इस खबर की स्थिति बदलना चाहते हैं?")) return;
   const values = {status,updated_at:new Date().toISOString()};
@@ -222,6 +404,19 @@ async function changeStatus(id,status) {
 }
 
 $("articles").addEventListener("click", async e => {
+  const editButton = e.target.closest("button[data-author-edit]");
+  if (editButton) {
+    const {data,error} = await db.from("articles")
+      .select("*").eq("id",editButton.dataset.authorEdit)
+      .eq("created_by",currentUser.id).single();
+    if (error || !data) {
+      alert("अपनी खबर लोड नहीं हुई: " + (error?.message || "रिकॉर्ड नहीं मिला"));
+      return;
+    }
+    showAuthorEditor(data);
+    return;
+  }
+
   const b = e.target.closest("button[data-action]");
   if (!b) return;
   const status = b.dataset.action === "approve" ? "approved" :
@@ -556,7 +751,7 @@ $("managementContent").addEventListener("click", async event => {
     if (!record) return;
 
     const choices = record.severity === "serious"
-      ? ["new","in_progress","awaiting_super_admin"]
+      ? ["new","in_progress","resolved","closed","awaiting_super_admin"]
       : ["new","in_progress","resolved","closed"];
 
     const status = prompt(
@@ -576,6 +771,10 @@ $("managementContent").addEventListener("click", async event => {
     );
 
     if (resolution === null) return;
+    if (status === "closed" && !resolution.trim()) {
+      alert("शिकायत Close करने से पहले समाधान/कार्रवाई का विवरण लिखना जरूरी है।");
+      return;
+    }
 
     const {error} = await db.from("internal_complaints")
       .update({
@@ -664,7 +863,7 @@ $("loginBtn").addEventListener("click", async () => {
   if (!email || !password) return msg("ईमेल और पासवर्ड भरें।",true);
   const {data,error} = await db.auth.signInWithPassword({email,password});
   if (error) return msg("Login असफल: " + error.message,true);
-  await openDashboard(data.user);
+  // Dashboard Auth Event से खुलेगा।
 });
 $("logout").addEventListener("click", async () => {
   await db.auth.signOut();
@@ -708,7 +907,7 @@ db.auth.onAuthStateChange((event, session) => {
     return;
   }
   if (recoveryMode) return;
-  if (session && ["INITIAL_SESSION","SIGNED_IN","TOKEN_REFRESHED"].includes(event)) {
+  if (session && ["INITIAL_SESSION","SIGNED_IN"].includes(event)) {
     openDashboard(session.user);
   }
 });
@@ -716,3 +915,6 @@ db.auth.onAuthStateChange((event, session) => {
 </script>
 </body>
 </html>
+
+
+
